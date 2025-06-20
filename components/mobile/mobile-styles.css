@@ -1,0 +1,132 @@
+/* Mobile Game UI Styles - Updated for Tailwind */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+:root {
+  --primary: #8A2BE2;
+  --primary-light: #9370DB;
+  --primary-dark: #4B0082;
+  --secondary: #00FFFF;
+  --secondary-dark: #00CED1;
+  --accent: #FF00FF;
+  --warning: #FFA500;
+  --info: #00BFFF;
+  --success: #32CD32;
+  
+  --dark-bg: #0D0C1D;
+  --dark-surface: #17162E;
+  --card-bg: rgba(23, 22, 46, 0.85);
+  --card-bg-opaque: rgb(23, 22, 46);
+
+  --text-primary: #E0E0E0;
+  --text-secondary: #A0AEC0;
+  --text-dim: #718096;
+  --border-color: rgba(0, 255, 255, 0.2);
+  --shadow-glow: rgba(138, 43, 226, 0.6);
+  --shadow-glow-secondary: rgba(0, 255, 255, 0.5);
+
+  --font-main: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Orbitron', sans-serif;
+
+  --dark-bg-rgb: 13, 12, 29;
+  --dark-surface-rgb: 23, 22, 46;
+  --primary-dark-rgb: 75, 0, 130;
+  --accent-rgb: 255, 0, 255;
+  --primary-rgb: 138, 43, 226;
+}
+
+.mobile-game-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: var(--dark-bg);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-game-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 15% 30%, rgba(138, 43, 226, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 85% 70%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 0, 255, 0.05) 0%, transparent 40%);
+  z-index: 0;
+  animation: backgroundFloat 25s ease-in-out infinite;
+}
+
+@keyframes backgroundFloat {
+  0%, 100% { transform: translate(0, 0) scale(1.05); opacity: 0.8; }
+  33% { transform: translate(-25px, 20px) scale(1.1); opacity: 1; }
+  66% { transform: translate(20px, -25px) scale(1); opacity: 0.7; }
+}
+
+/* Utility classes */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom Leaflet marker styles */
+.leaflet-quest-marker {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #8A2BE2, #00FFFF);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.leaflet-player-marker {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #8A2BE2, #FF00FF);
+  border-radius: 50%;
+  border: 2px solid #00FFFF;
+  box-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Responsive adjustments */
+@media (max-height: 700px) {
+  /* Adjust for smaller screens */
+  .mobile-game-container {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Adjust for very small screens */
+  .mobile-game-container {
+    font-size: 13px;
+  }
+}
