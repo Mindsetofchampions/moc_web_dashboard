@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const doc = await prisma.verificationDocument.findUnique({
-      where: { id: params.docId },
+      where: { id: (await params).docId },
     });
 
     if (!doc) {
@@ -35,7 +35,7 @@ export async function GET(
         key = key.substring(bucketName.length + 1);
       }
 
-      console.log(`Generating presigned URL for bucket: ${bucketName}, key: ${key}`);
+      const decodedKey = decodeURIComponent(key);
 
       const s3Client = new S3Client({
         region: process.env.AWS_REGION!,
@@ -47,7 +47,7 @@ export async function GET(
       
       const command = new GetObjectCommand({
         Bucket: bucketName,
-        Key: key,
+        Key: decodedKey,
       });
 
       // Generate presigned URL (valid for 15 minutes)
