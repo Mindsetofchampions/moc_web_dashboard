@@ -16,7 +16,8 @@ import {
   Edit,
   RefreshCw, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  Trash2 
 } from 'lucide-react';
 
 interface User {
@@ -40,6 +41,81 @@ interface EditUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (userData: any) => Promise<void>;
+}
+
+interface DeleteConfirmModalProps {
+  user: User | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+  isDeleting: boolean;
+}
+
+function DeleteConfirmModal({ user, isOpen, onClose, onConfirm, isDeleting }: DeleteConfirmModalProps) {
+  if (!isOpen || !user) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-gray-900 border border-red-800 rounded-xl shadow-xl p-6 w-full max-w-md relative">
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white"
+          disabled={isDeleting}
+        >
+          <X size={20} />
+        </button>
+        
+        <h2 className="text-xl font-bold text-white mb-4 flex items-center">
+          <Trash2 className="mr-2 text-red-400" size={20} />
+          Delete User
+        </h2>
+        
+        <div className="mb-6">
+          <p className="text-gray-300 mb-2">
+            Are you sure you want to delete this user?
+          </p>
+          <div className="bg-gray-800 rounded-lg p-3">
+            <p className="text-white font-medium">{user.name || 'Unnamed User'}</p>
+            <p className="text-gray-400 text-sm">{user.email}</p>
+            <p className="text-gray-500 text-xs mt-1">Role: {user.role}</p>
+          </div>
+          <div className="mt-4 p-3 bg-red-500/10 border border-red-600 rounded-lg">
+            <p className="text-red-400 text-sm">
+              ⚠️ This action cannot be undone. This will permanently delete the user and all associated data.
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isDeleting}
+            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center"
+          >
+            {isDeleting ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete User
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function EditUserModal({ user, isOpen, onClose, onSave }: EditUserModalProps) {
@@ -222,7 +298,11 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   
-  // Function to fetch users
+  // State for delete modal
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -237,6 +317,7 @@ export default function UsersPage() {
       
       if (search) queryParams.set('search', search);
       if (roleFilter) queryParams.set('role', roleFilter);
+      if (verifiedFilter) queryParams.set('verified', verifiedFilter);
       
       const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
       
@@ -254,8 +335,8 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, limit, search, roleFilter, sortBy, sortOrder]);
-  
+  }, [page, limit, search, roleFilter, verifiedFilter, sortBy, sortOrder]);
+    
   // Initial fetch
   useEffect(() => {
     fetchUsers();
@@ -264,29 +345,27 @@ export default function UsersPage() {
   // Handle search
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPage(1); // Reset to first page when searching
+    setPage(1);
     fetchUsers();
   };
   
   // Handle role filter change
   const handleRoleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setRoleFilter(e.target.value);
-    setPage(1); // Reset to first page when filtering
+    setPage(1);
   };
   
   // Handle verified filter change
   const handleVerifiedFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setVerifiedFilter(e.target.value);
-    setPage(1); // Reset to first page when filtering
+    setPage(1);
   };
   
   // Handle sort change
   const handleSortChange = (column: string) => {
     if (sortBy === column) {
-      // Toggle order if clicking the same column
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
-      // Default to descending for a new column
       setSortBy(column);
       setSortOrder('desc');
     }
@@ -307,6 +386,44 @@ export default function UsersPage() {
     setShowEditModal(true);
   };
   
+  // Open delete modal
+  const handleDeleteUser = (user: User) => {
+    setUserToDelete(user);
+    setShowDeleteModal(true);
+  };
+  
+  // Confirm delete
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      const response = await fetch(`/api/admin/users/${userToDelete.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete user');
+      }
+      
+      // Close modal and refresh list
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+      fetchUsers();
+      
+      // Show success message (you can add a toast notification here)
+      console.log('User deleted successfully');
+      
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete user');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+  
   // Save user changes
   const handleSaveUser = async (userData: any) => {
     if (!selectedUser) return;
@@ -325,34 +442,10 @@ export default function UsersPage() {
         throw new Error(errorData.error || 'Failed to update user');
       }
       
-      // Refresh the users list
       fetchUsers();
     } catch (err) {
       console.error('Error updating user:', err);
       throw err;
-    }
-  };
-  
-  // Quick actions to change role
-  const handleQuickRoleChange = async (userId: string, newRole: string) => {
-    try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ role: newRole })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update user role');
-      }
-      
-      // Refresh the users list
-      fetchUsers();
-    } catch (err) {
-      console.error('Error updating user role:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update user role');
     }
   };
   
@@ -371,7 +464,6 @@ export default function UsersPage() {
         throw new Error('Failed to update user verification status');
       }
       
-      // Refresh the users list
       fetchUsers();
     } catch (err) {
       console.error('Error updating user verification status:', err);
@@ -642,6 +734,15 @@ export default function UsersPage() {
                               <UserX className="w-5 h-5" />
                             </button>
                           )}
+                          
+                          {/* Add Delete Button */}
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            className="text-red-400 hover:text-red-300 p-1"
+                            title="Delete User"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -690,6 +791,15 @@ export default function UsersPage() {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         onSave={handleSaveUser}
+      />
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        user={userToDelete}
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );

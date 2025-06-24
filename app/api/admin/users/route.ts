@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const search = url.searchParams.get('search') || '';
     const role = url.searchParams.get('role') || undefined;
+    const verified = url.searchParams.get('verified') || ''; 
     const sortBy = url.searchParams.get('sortBy') || 'createdAt';
     const order = url.searchParams.get('order') || 'desc';
     
@@ -39,6 +40,14 @@ export async function GET(request: NextRequest) {
     
     if (role) {
       where.role = role;
+    }
+    
+    if (verified) {
+      if (verified === 'verified') {
+        where.isVerified = true;
+      } else if (verified === 'unverified') {
+        where.isVerified = false;
+      }
     }
     
     const users = await prisma.user.findMany({
