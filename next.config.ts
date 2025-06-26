@@ -1,5 +1,4 @@
-
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const nextConfig = {
   /* config options here */
   reactStrictMode: true,

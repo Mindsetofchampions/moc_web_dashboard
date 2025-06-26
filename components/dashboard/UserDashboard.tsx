@@ -252,11 +252,11 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ userName }) => {
                 <h4 className="font-medium text-gray-800">Recruitment</h4>
                 <p className="text-gray-500 text-sm">{event.spots}</p>
               </div>
-              <div>
+              {/* <div>
                 <button className="text-blue-500 rounded-lg hover:underline hover:cursor-pointer text-sm">
                   View Details
                 </button>
-              </div>
+              </div> */}
 
             </div>
           </div>
