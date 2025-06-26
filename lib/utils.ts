@@ -1,3 +1,4 @@
+//lib/utils.ts
 // Format date to "Monday, January 1, 2023 at 10:00 AM"
 export function formatDate(date: Date | string): string {
     const d = new Date(date);

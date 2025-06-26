@@ -8,8 +8,24 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInFormSchema } from "@/lib/auth-schema";
 import { authClient } from "@/lib/auth-client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+type UserRole = 'VOLUNTEER' | 'ORGANIZATION' | 'ADMIN' | 'STUDENT';
+
+const USER_TYPES = [
+  { value: 'VOLUNTEER', label: 'Volunteer' },
+  { value: 'ORGANIZATION', label: 'Organization' },
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'STUDENT', label: 'Student' },
+] as const;
 
 export default function SignIn() {
+  const router = useRouter();
+  const [selectedUserType, setSelectedUserType] = useState<UserRole>('VOLUNTEER');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  
   const form = useForm<z.infer<typeof signInFormSchema>>({
     resolver: zodResolver(signInFormSchema),
     defaultValues: {
@@ -18,27 +34,107 @@ export default function SignIn() {
     },
   })
 
+  const getRedirectURL = (userType: UserRole) => {
+    switch (userType) {
+      case 'STUDENT':
+        return '/mobile-ui';
+      case 'ADMIN':
+        return '/dashboards';
+      default:
+        return '/dashboards';
+    }
+  };
+
+  // Function to validate user's actual role matches selected role
+  const validateUserRole = async (expectedRole: UserRole): Promise<{ isValid: boolean; actualRole?: string }> => {
+    try {
+      const response = await fetch('/api/user/check-role', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        return {
+          isValid: userData.role === expectedRole,
+          actualRole: userData.role
+        };
+      }
+      return { isValid: false };
+    } catch (error) {
+      console.error('Error validating user role:', error);
+      return { isValid: false };
+    }
+  };
+
   async function onSubmit(values: z.infer<typeof signInFormSchema>) {
-    const { email, password } = values;
-    const { data, error } = await authClient.signIn.email({
-      email,
-      password,
-      callbackURL: "/dashboards",
-    }, {
-      onRequest: (ctx) => {
-        console.log("Request is being sent...");
-      },
-      onSuccess: (ctx) => {
-        form.reset();
-        console.log("Sign-in successful!");
-      },
-      onError: (ctx) => {
-        console.error("Error during sign-in:", ctx.error.message);
-        alert(ctx.error.message);
-      },
-    });
-    console.log(values)
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const { email, password } = values;
+      
+      // Step 1: Attempt to sign in
+      const { data, error: authError } = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: getRedirectURL(selectedUserType),
+      }, {
+        onRequest: (ctx) => {
+          console.log("Signing in...");
+        },
+        onSuccess: async (ctx) => {
+          console.log("Sign-in successful, validating role...");
+          
+          // Step 2: Validate the user's actual role matches selected role
+          const { isValid, actualRole } = await validateUserRole(selectedUserType);
+          
+          if (!isValid) {
+            // Role mismatch - sign out and show error
+            await authClient.signOut();
+            // setError(`Role mismatch. Your account is registered as ${actualRole}, but you selected ${selectedUserType}. Please select the correct role.`);
+            setError('Incorrect Password or Username. Please try again.');
+            setIsLoading(false);
+            return;
+          }
+          
+          // Step 3: Redirect based on actual role (which matches selected role)
+          console.log("Role validation passed, redirecting...");
+          form.reset();
+          router.push(getRedirectURL(selectedUserType));
+        },
+        onError: (ctx) => {
+          console.error("Sign-in failed:", ctx.error.message);
+          setError("Invalid email or password");
+          setIsLoading(false);
+        },
+      });
+      
+    } catch (error) {
+      console.error("Unexpected error during sign-in:", error);
+      setError("An unexpected error occurred. Please try again.");
+      setIsLoading(false);
+    }
   }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      // For Google sign-in, redirect and handle role validation in callback
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: `/auth/callback?expectedRole=${selectedUserType}`,
+      });
+    } catch (error) {
+      console.error("Error with Google sign-in:", error);
+      setError("Failed to sign in with Google. Please try again.");
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
@@ -66,23 +162,48 @@ export default function SignIn() {
 
         {/* Form */}
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 w-[400px]">
+          {/* Role Selector */}
+          <div className="mb-4">
+            <div className="flex bg-[#9B9B9B0D] backdrop-blur-sm rounded-lg p-1">
+              {USER_TYPES.map((type) => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setSelectedUserType(type.value)}
+                  disabled={isLoading}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200 ${
+                    selectedUserType === type.value
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'text-gray-300 hover:text-white'
+                  } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="text-red-400 text-sm mb-2 text-center bg-red-900/20 border border-red-400/30 rounded p-2">
+              {error}
+            </div>
+          )}
+
           <div className="relative">
             <input
               type="email"
-              placeholder="Username"
+              placeholder="Email"
               {...form.register("email")}
-              className="w-full bg-[#9B9B9B0D] backdrop-blur-sm text-[#49454F] p-3 pl-12 rounded-md"
+              disabled={isLoading}
+              className="w-full bg-[#9B9B9B0D] backdrop-blur-sm text-[#49454F] p-3 pl-12 rounded-md disabled:opacity-50"
             />
             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
               </svg>
             </span>
-            <button type="button" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
           </div>
 
           <div className="relative">
@@ -90,26 +211,29 @@ export default function SignIn() {
               type="password"
               placeholder="Password"
               {...form.register("password")}
-              className="w-full bg-[#9B9B9B0D] backdrop-blur-sm text-[#49454F] p-3 pl-12 rounded-md"
+              disabled={isLoading}
+              className="w-full bg-[#9B9B9B0D] backdrop-blur-sm text-[#49454F] p-3 pl-12 rounded-md disabled:opacity-50"
             />
             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
               </svg>
             </span>
-            <button type="button" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
           </div>
 
           {/* Buttons Row */}
           <div className="flex items-center justify-between mt-2 gap-2">
-            <Link href="/sign-up" className="text-white text-sm hover:underline w-full bg-[#9B9B9B0D] backdrop-blur-sm p-3 text-center rounded-md">
+            <Link 
+              href="/sign-up" 
+              className={`text-white text-sm hover:underline w-full bg-[#9B9B9B0D] backdrop-blur-sm p-3 text-center rounded-md ${
+                isLoading ? 'pointer-events-none opacity-50' : ''
+              }`}
+            >
               Create Account
             </Link>
-            <span className="text-white text-sm hover:underline w-full bg-[#9B9B9B0D] backdrop-blur-sm p-3  rounded-md text-center">
+            <span className={`text-white text-sm hover:underline w-full bg-[#9B9B9B0D] backdrop-blur-sm p-3 rounded-md text-center ${
+              isLoading ? 'opacity-50' : ''
+            }`}>
               Forgot Password?
             </span>
           </div>
@@ -120,25 +244,32 @@ export default function SignIn() {
           </div>
 
           {/* Sign in Buttons */}
-          <button type="submit" className="w-full bg-[#9B9B9B0D] hover:bg-red-700 text-white p-3 rounded-md transition duration-300 cursor-pointer">
-            Sign In
+          <button 
+            type="submit" 
+            disabled={isLoading}
+            className="w-full bg-[#9B9B9B0D] hover:bg-red-700 text-white p-3 rounded-md transition duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Signing In...
+              </div>
+            ) : (
+              "Sign In"
+            )}
           </button>
 
-          <button 
+          {/* <button 
             type="button" 
-            onClick={async () => {
-              await authClient.signIn.social({
-                provider: "google",
-                callbackURL: "/dashboards", // Redirect to dashboard after successful sign-in
-              });
-            }} 
-            className="w-full bg-[#9B9B9B0D] text-white p-3 rounded-md transition duration-300 flex items-center justify-center gap-2 cursor-pointer hover:bg-red-700"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+            className="w-full bg-[#9B9B9B0D] text-white p-3 rounded-md transition duration-300 flex items-center justify-center gap-2 cursor-pointer hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
               <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" fill="currentColor"/>
             </svg>
             Sign-in with Google
-          </button>
+          </button> */}
         </form>
       </div>
     </div>

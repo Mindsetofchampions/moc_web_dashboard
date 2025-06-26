@@ -1,4 +1,4 @@
-
+//app/api/users/check-role.tsx
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';

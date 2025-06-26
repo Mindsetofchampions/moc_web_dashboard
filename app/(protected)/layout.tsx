@@ -1,24 +1,32 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-expressions */
-
+// app/(protected)/layout.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import PageHeader from '@/components/PageHeader';
-
 
 export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Check if this is the mobile-ui route
+  const isMobileUI = pathname?.startsWith('/mobile-ui');
+
   useEffect(() => {
+    // Skip user fetching for mobile UI as it handles its own auth
+    if (isMobileUI) {
+      setLoading(false);
+      return;
+    }
+
     const fetchUserData = async () => {
       try {
         const profileResponse = await fetch('/api/user/profile');
@@ -49,7 +57,12 @@ export default function ProtectedLayout({
     };
     
     fetchUserData();
-  }, []);
+  }, [isMobileUI]);
+
+  // For mobile-ui, render children directly without any layout wrapper
+  if (isMobileUI) {
+    return <>{children}</>;
+  }
   
   if (loading) {
     return (

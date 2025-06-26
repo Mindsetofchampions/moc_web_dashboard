@@ -1,3 +1,4 @@
+//components/mobile/LoadingOverlay.tsx
 import React from 'react';
 
 interface LoadingOverlayProps {

@@ -12,6 +12,7 @@ enum UserRole {
   VOLUNTEER
   ORGANIZATION
   ADMIN
+  STUDENT
 }
 
 model User {

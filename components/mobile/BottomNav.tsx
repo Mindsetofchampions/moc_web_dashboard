@@ -10,9 +10,9 @@ interface BottomNavProps {
 
 export default function BottomNav({ currentScreen, onScreenChange, onQuestToggle, questPanelActive }: BottomNavProps) {
   const navItems = [
-    { id: 'mapScreen', icon: '🗺️', label: 'GridMap' },
-    { id: 'questPanel', icon: '📋', label: 'Logs', isToggle: true },
-    { id: 'shopScreen', icon: '🛍️', label: 'Market' },
+    { id: 'mapScreen', icon: '🗺️', label: 'Map' },
+    { id: 'questPanel', icon: '⚔️', label: 'quests', isToggle: true },
+    { id: 'shopScreen', icon: '🛍️', label: 'Shop' },
     { id: 'profileScreen', icon: '👤', label: 'Profile' }
   ];
 
@@ -29,7 +29,7 @@ export default function BottomNav({ currentScreen, onScreenChange, onQuestToggle
       {navItems.map((item) => {
         const isActive = item.isToggle 
           ? questPanelActive 
-          : currentScreen === item.id;
+          : (!questPanelActive && currentScreen === item.id);
         
         return (
           <div

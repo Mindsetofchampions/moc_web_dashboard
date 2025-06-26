@@ -1,4 +1,4 @@
-/* Mobile Game UI Styles - Updated for Tailwind */
+/* Mobile Game UI Styles - Updated for Mapbox with Fixed Marker Positioning */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
 :root {
@@ -61,12 +61,6 @@
   animation: backgroundFloat 25s ease-in-out infinite;
 }
 
-@keyframes backgroundFloat {
-  0%, 100% { transform: translate(0, 0) scale(1.05); opacity: 0.8; }
-  33% { transform: translate(-25px, 20px) scale(1.1); opacity: 1; }
-  66% { transform: translate(20px, -25px) scale(1); opacity: 0.7; }
-}
-
 /* Utility classes */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -101,7 +95,74 @@
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* Mapbox custom styles - FIXED */
+.mapboxgl-popup {
+  z-index: 20000 !important;
+}
+
+.mapboxgl-popup-content {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: rgba(23, 22, 46, 0.95) !important;
+}
+
+.mapboxgl-ctrl-group {
+  background: rgba(23, 22, 46, 0.9) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  margin-bottom: 20px !important;
+  margin-left: 10px !important;
+}
+
+.mapboxgl-ctrl-group button {
+  background: transparent !important;
+  color: #A0AEC0 !important;
+}
+
+.mapboxgl-ctrl-group button:hover {
+  background: rgba(138, 43, 226, 0.3) !important;
+  color: #00FFFF !important;
+}
+
+.mapboxgl-canvas {
+  border-radius: 0 !important;
+}
+
+/* CRITICAL: Ensure markers are properly positioned and visible */
+.mapboxgl-marker {
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+}
+
+.quest-marker {
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+  position: relative !important;
+}
+
+/* Remove conflicting canvas container styles */
+.mapboxgl-canvas-container {
+  /* Removed problematic margin and height styles */
+}
+
 /* Animations */
+@keyframes backgroundFloat {
+  0%, 100% { transform: translate(0, 0) scale(1.05); opacity: 0.8; }
+  33% { transform: translate(-25px, 20px) scale(1.1); opacity: 1; }
+  66% { transform: translate(20px, -25px) scale(1); opacity: 0.7; }
+}
+
+@keyframes fadeInState {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -111,9 +172,82 @@
   50% { opacity: 0.7; transform: scale(1.1); }
 }
 
+@keyframes pulseCorrect {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px var(--success); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shakeIncorrect {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulseDotAnimation {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+@keyframes superPulse {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 0.85; 
+    transform: scale(1.2); 
+  }
+}
+
+@keyframes playerMegaPulse {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: scale(1.3); 
+  }
+}
+
+/* Custom utility classes for animations that can't be done with Tailwind */
+.animate-fadeInState {
+  animation: fadeInState 0.5s ease-out;
+}
+
+.animate-pulseCorrect {
+  animation: pulseCorrect 0.5s ease;
+}
+
+.animate-shakeIncorrect {
+  animation: shakeIncorrect 0.5s ease;
+}
+
+.animate-rotate-slow {
+  animation: rotate 25s linear infinite;
+}
+
+.animate-pulse-dot {
+  animation: pulseDotAnimation 1.8s infinite;
+}
+
+.animate-super-pulse {
+  animation: superPulse 2.5s infinite ease-in-out;
+}
+
+.animate-player-mega-pulse {
+  animation: playerMegaPulse 2s infinite;
 }
 
 /* Responsive adjustments */

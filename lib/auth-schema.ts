@@ -1,3 +1,4 @@
+//lib/auth-schema.ts
 import { z } from "zod";
 
 export const formSchema = z.object({

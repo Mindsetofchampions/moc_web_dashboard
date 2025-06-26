@@ -1,3 +1,4 @@
+//components/mobile/StatusBar.tsx
 import React from 'react';
 
 interface StatusBarProps {
@@ -6,7 +7,6 @@ interface StatusBarProps {
     level: number;
     avatar: string;
     coins: number;
-    gems: number;
   };
   onDailyReward: () => void;
 }
@@ -35,10 +35,6 @@ export default function StatusBar({ playerData, onDailyReward }: StatusBarProps)
             </div>
             <span className="font-semibold text-sm">{playerData.coins.toLocaleString()}</span>
           </div>
-          <div className="bg-[rgba(255,255,255,0.08)] px-[14px] py-[7px] rounded-[15px] flex items-center gap-[6px] border border-[rgba(0,255,255,0.2)] backdrop-blur-[5px] transition-all duration-300 ease-in-out shadow-[0_2px_5px_rgba(0,0,0,0.2)] hover:transform hover:translate-y-[-2px] hover:shadow-[0_4px_10px_rgba(0,255,255,0.5)]">
-            <div className="w-[22px] h-[22px] bg-gradient-to-br from-[#00FFFF] to-[#00BFFF] [clip-path:polygon(50%_0%,100%_38%,82%_100%,18%_100%,0%_38%)]"></div>
-            <span className="font-semibold text-sm">{playerData.gems}</span>
-          </div>
         </div>
         <button 
           className="bg-[rgba(255,255,255,0.1)] rounded-full w-9 h-9 flex items-center justify-center text-lg text-[#A0AEC0] border border-[rgba(0,255,255,0.2)] cursor-pointer transition-all duration-300 ease-in-out hover:bg-[#8A2BE2] hover:text-white hover:shadow-[0_0_15px_rgba(138,43,226,0.6)]"
@@ -46,12 +42,6 @@ export default function StatusBar({ playerData, onDailyReward }: StatusBarProps)
           onClick={onDailyReward}
         >
           🎁
-        </button>
-        <button 
-          className="bg-[rgba(255,255,255,0.1)] rounded-full w-9 h-9 flex items-center justify-center text-lg text-[#A0AEC0] border border-[rgba(0,255,255,0.2)] cursor-pointer transition-all duration-300 ease-in-out hover:bg-[#8A2BE2] hover:text-white hover:shadow-[0_0_15px_rgba(138,43,226,0.6)]"
-          title="Settings"
-        >
-          ⚙️
         </button>
       </div>
     </div>
