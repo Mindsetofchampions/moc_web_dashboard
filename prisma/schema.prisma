@@ -1,3 +1,143 @@
+// generator client {
+//   provider = "prisma-client-js"
+//   output   = "../lib/generated/prisma"
+// }
+
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+
+// enum UserRole {
+//   VOLUNTEER
+//   ORGANIZATION
+//   ADMIN
+//   STUDENT
+// }
+
+// model User {
+//   id                  String                @id 
+//   email               String?               @unique
+//   name                String?
+//   emailVerified       Boolean
+//   image               String?
+//   role                UserRole              @default(VOLUNTEER)
+//   isVerified          Boolean               @default(false)
+//   verificationDocId   String?
+//   dateOfBirth         DateTime?
+//   presentAddress      String?
+//   permanentAddress    String?
+//   city                String?
+//   postalCode          String?
+//   country             String?
+//   createdAt           DateTime
+//   updatedAt           DateTime
+//   sessions            Session[]
+//   accounts            Account[]
+//   verificationDoc     VerificationDocument? @relation(fields: [verificationDocId], references: [id])
+//   verificationRequests VerificationRequest[]
+//   eventsCreated       Event[]               @relation("EventOrganizer")
+//   eventRegistrations  EventRegistration[]   
+
+//   @@map("user")
+// }
+
+// model Session {
+//   id        String   @id
+//   expiresAt DateTime
+//   token     String
+//   createdAt DateTime
+//   updatedAt DateTime
+//   ipAddress String?
+//   userAgent String?
+//   userId    String
+//   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   @@unique([token])
+//   @@map("session")
+// }
+
+// model Account {
+//   id                    String    @id
+//   accountId             String
+//   providerId            String
+//   userId                String
+//   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   accessToken           String?
+//   refreshToken          String?
+//   idToken               String?
+//   accessTokenExpiresAt  DateTime?
+//   refreshTokenExpiresAt DateTime?
+//   scope                 String?
+//   password              String?
+//   createdAt             DateTime
+//   updatedAt             DateTime
+
+//   @@map("account")
+// }
+
+// model Verification {
+//   id         String    @id
+//   identifier String
+//   value      String
+//   expiresAt  DateTime
+//   createdAt  DateTime?
+//   updatedAt  DateTime?
+
+//   @@map("verification")
+// }
+
+// model VerificationDocument {
+//   id          String   @id @default(uuid())
+//   documentUrl String
+//   uploadedAt  DateTime @default(now())
+//   users       User[]
+// }
+
+// model VerificationRequest {
+//   id          String   @id @default(uuid())
+//   userId      String
+//   user        User     @relation(fields: [userId], references: [id])
+//   status      String   @default("PENDING") 
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+//   reviewedBy  String?  
+//   notes       String?
+// }
+
+// model Event {
+//   id              String              @id @default(uuid())
+//   title           String
+//   description     String
+//   startTime       DateTime
+//   endTime         DateTime
+//   address         String
+//   logo            String?  
+//   primaryColor    String?  
+//   secondaryColor  String?  
+//   maxSpots        Int                 @default(0)    
+//   createdAt       DateTime            @default(now())
+//   updatedAt       DateTime            @updatedAt
+//   organizerId     String   
+//   organizer       User                @relation("EventOrganizer", fields: [organizerId], references: [id])
+//   registrations   EventRegistration[] 
+
+//   @@map("event")  
+// }
+
+// model EventRegistration {
+//   id        String   @id @default(uuid())
+//   eventId   String
+//   userId    String
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+//   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+//   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+//   @@unique([eventId, userId]) 
+//   @@map("event_registration")
+// }
+
 generator client {
   provider = "prisma-client-js"
   output   = "../lib/generated/prisma"
@@ -13,6 +153,29 @@ enum UserRole {
   ORGANIZATION
   ADMIN
   STUDENT
+}
+
+enum QuestType {
+  LOGIC
+  MATH
+  HEALTH
+  SCHOLAR
+  EXPLORATION
+  STEWARDSHIP
+  EVENT
+}
+
+enum QuestDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ShopItemType {
+  AVATAR
+  SKIN
+  BOOST
+  CREDITS
 }
 
 model User {
@@ -38,10 +201,174 @@ model User {
   verificationRequests VerificationRequest[]
   eventsCreated       Event[]               @relation("EventOrganizer")
   eventRegistrations  EventRegistration[]   
+  
+  // Student-specific relations
+  studentProfile      StudentProfile?
+  questCompletions    QuestCompletion[]
+  studentPurchases    StudentPurchase[]
+  studentAchievements StudentAchievement[]
 
   @@map("user")
 }
 
+model StudentProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Game stats
+  level         Int      @default(1)
+  xp            Int      @default(0)
+  coins         Int      @default(12000)
+  
+  // Attributes (0-100)
+  character     Int      @default(0)
+  health        Int      @default(0)
+  exploration   Int      @default(0)
+  scholarship   Int      @default(0)
+  stewardship   Int      @default(0)
+  
+  // Profile customization
+  avatar        String   @default("😎")
+  title         String   @default("Grid Runner")
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("student_profile")
+}
+
+model Quest {
+  id               String           @id @default(uuid())
+  title            String
+  description      String
+  icon             String
+  type             QuestType
+  difficulty       QuestDifficulty  @default(EASY)
+  
+  // Quest configuration
+  attribute        String           // Which attribute this quest improves
+  xpReward         Int              @default(100)
+  coinReward       Int              @default(50)
+  attributeBoost   Int              @default(5)
+  
+  // Quiz-specific fields (for non-event quests)
+  timeLimit        Int?             // seconds per question
+  questions        Json?            // Array of question objects
+  
+  // Requirements
+  minLevel         Int              @default(1)
+  requiredQuests   String[]         @default([])
+  
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  
+  // Relations
+  completions      QuestCompletion[]
+
+  @@map("quest")
+}
+
+model QuestCompletion {
+  id          String   @id @default(uuid())
+  userId      String
+  questId     String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest       Quest    @relation(fields: [questId], references: [id], onDelete: Cascade)
+  
+  score       Int      @default(0)
+  timeSpent   Int      @default(0) // in seconds
+  xpEarned    Int      @default(0)
+  coinsEarned Int      @default(0)
+  
+  completedAt DateTime @default(now())
+
+  @@unique([userId, questId])
+  @@map("quest_completion")
+}
+
+model ShopItem {
+  id          String       @id @default(uuid())
+  name        String
+  description String
+  icon        String
+  type        ShopItemType
+  price       Int
+  
+  // Item effects
+  attributeBoosts Json?      // { "character": 5, "health": 10 }
+  coinBonus       Int?       // For credit items
+  xpBonus         Int?       // For boost items
+  
+  isActive    Boolean      @default(true)
+  isLimited   Boolean      @default(false)
+  stock       Int?         // null = unlimited
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Relations
+  purchases   StudentPurchase[]
+
+  @@map("shop_item")
+}
+
+model StudentPurchase {
+  id        String   @id @default(uuid())
+  userId    String
+  itemId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  pricePaid Int
+  quantity  Int      @default(1)
+  
+  purchasedAt DateTime @default(now())
+
+  @@map("student_purchase")
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  icon        String
+  
+  // Unlock conditions
+  requiredXp       Int?
+  requiredLevel    Int?
+  requiredQuests   String[]  @default([])
+  requiredAttribute String?  // e.g., "character:50"
+  
+  // Rewards
+  xpReward    Int      @default(0)
+  coinReward  Int      @default(0)
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  studentAchievements StudentAchievement[]
+
+  @@map("achievement")
+}
+
+model StudentAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  achievementId String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  unlockedAt    DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+  @@map("student_achievement")
+}
+
+// Existing models remain the same...
 model Session {
   id        String   @id
   expiresAt DateTime
