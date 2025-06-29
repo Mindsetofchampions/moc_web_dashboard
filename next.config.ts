@@ -47,7 +47,7 @@ const nextConfig = {
       }
     ]
   },
-  webpack: (config: { resolve: { fallback: any; }; module: { rules: { test: RegExp; use?: string[]; loader?: string; options?: { presets: string[]; }; }[]; }; }, { isServer }: any) => {
+  webpack: (config: { resolve: { fallback: any; }; }, { isServer }: any) => {
     // Handle Mapbox GL JS
     if (!isServer) {
       config.resolve.fallback = {
@@ -57,21 +57,6 @@ const nextConfig = {
         tls: false,
       };
     }
-
-    // Handle CSS imports
-    config.module.rules.push({
-      test: /\.css$/,
-      use: ['style-loader', 'css-loader'],
-    });
-
-    // Handle Mapbox GL JS worker
-    config.module.rules.push({
-      test: /mapbox-gl.+\.js$/,
-      loader: 'babel-loader',
-      options: {
-        presets: ['@babel/preset-env'],
-      },
-    });
 
     return config;
   },
