@@ -94,8 +94,7 @@ export default function SignIn() {
           if (!isValid) {
             // Role mismatch - sign out and show error
             await authClient.signOut();
-            // setError(`Role mismatch. Your account is registered as ${actualRole}, but you selected ${selectedUserType}. Please select the correct role.`);
-            setError('Incorrect Password or Username. Please try again.');
+            setError(`Role mismatch. Your account is registered as ${actualRole}, but you selected ${selectedUserType}. Please select the correct role.`);
             setIsLoading(false);
             return;
           }
